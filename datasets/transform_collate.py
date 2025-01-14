@@ -70,10 +70,12 @@ class subg_transform(BaseTransform):
         #print(non_zero_eigvec.size())
         # Take desired number of eigenvectors from non-zero ones
         pos_enc = non_zero_eigvec[:, :self.pos_enc_dim].float()
+        # Get the available number of eigenvectors
+        num_available = non_zero_eigvec.size(1)
         #print(pos_enc.size())
         # Pad if necessary
-        if N < self.pos_enc_dim:
-            pos_enc = torch.nn.functional.pad(pos_enc, (0, self.pos_enc_dim - N), value=0)
+        if num_available < self.pos_enc_dim:
+            pos_enc = torch.nn.functional.pad(pos_enc, (0, self.pos_enc_dim - num_available), value=0)
         #print(pos_enc.size()); print(pos_enc)
         return pos_enc
 
@@ -93,7 +95,6 @@ class subg_transform(BaseTransform):
         
         # Combine random features with positional encoding
         data.x = torch.cat([
-            torch.randn(N, self.feature_dim),
             pos_encoding
         ], dim=-1)
         
@@ -142,13 +143,15 @@ class subg_transform(BaseTransform):
         subg_edge_index = edge_candidates.nonzero(as_tuple=False).t()
         
         # Compute positional encoding for subgraph
-        subg_pos_encoding = self.add_eig_vec(poss, subg_edge_index)
+        #subg_pos_encoding = self.add_eig_vec(poss, subg_edge_index)
         
         # Combine random features with positional encoding for subgraph
-        subg_x = torch.cat([
-            torch.randn(subg_size, self.feature_dim),
-            subg_pos_encoding
-        ], dim=-1)
+        #subg_x = torch.cat([
+        #    torch.randn(subg_size, self.feature_dim),
+        #    subg_pos_encoding
+        #], dim=-1)
+        
+        subg_x = data.x[mask]
         
         self_index = mask[:center_idx].sum()
         
